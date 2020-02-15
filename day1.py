@@ -1,4 +1,4 @@
-import Util
+import util
 
 # --- Day 1: The Tyranny of the Rocket Equation ---
 #
@@ -25,7 +25,7 @@ def fuel_for_mass(mass):
     return mass // 3 - 2
 
 
-input1 = map(int, Util.read_input("day1"))
+input1 = map(int, util.read_input("day1"))
 required_fuel_1 = sum(map(fuel_for_mass, input1))
 print("Part One:", required_fuel_1)
 
@@ -63,6 +63,6 @@ def fuel_for_mass_reinvented(mass):
         return fuel + fuel_for_mass_reinvented(fuel)
 
 
-input2 = map(int, Util.read_input("day1"))
+input2 = map(int, util.read_input("day1"))
 required_fuel_2 = sum(map(fuel_for_mass_reinvented, input2))
 print("Part Two:", required_fuel_2)

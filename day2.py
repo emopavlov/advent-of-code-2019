@@ -1,4 +1,4 @@
-import Util
+import util
 
 # --- Day 2: 1202 Program Alarm ---
 #
@@ -104,7 +104,7 @@ def execute(memory):
     return memory[0]
 
 
-the_input = list(map(int, Util.read_input("day2", ",")))
+the_input = list(map(int, util.read_input("day2", ",")))
 
 part_one_input = the_input.copy()
 # reset input
