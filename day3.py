@@ -61,7 +61,8 @@ def invert(x):
     elif isinstance(x, Section):
         return Section(
             invert(x.internal.start),
-            invert(x.internal.end)
+            invert(x.internal.end),
+            x.step_at_a
         )
     elif isinstance(x, NoIntersection):
         return x
@@ -94,7 +95,10 @@ class Section:
             self.end = end
             self.y = start.y
 
-    def __init__(self, a, b):
+    def __init__(self, a, b, step):
+        self.a = a
+        self.b = b
+        self.step_at_a = step
         if a.x == b.x:  # vertical
             start = Location(a.x, min(a.y, b.y))
             end = Location(a.x, max(a.y, b.y))
@@ -135,20 +139,37 @@ class Section:
         else:
             return invert(invert(self).intersection(invert(other)))
 
+    def intersection_distance(self, other):
+        interx = self.intersection(other)
+        if isinstance(interx, Section):
+            interx = interx.a  # use the first point of the section
+
+        if isinstance(interx, Location) and interx != Location(0, 0):
+            return self.step_at_a + abs(self.a.x - interx.x) + abs(self.a.y - interx.y) + \
+                other.step_at_a + abs(other.a.x - interx.x) + abs(other.a.y - interx.y)
+        else:
+            return -1
+
 
 class Wire:
     def __init__(self, path):
         self.sections = []
         start = Location(0, 0)
+        step = 0
         for leg in path:
             end = Wire._section_end(start, leg)
-            self.sections.append(Section(start, end))
+            self.sections.append(Section(start, end, step))
+            step += Wire.length(leg)
             start = end
+
+    @staticmethod
+    def length(leg):
+        return int(leg[1:])
 
     @staticmethod
     def _section_end(start, leg):
         direction = leg[0]
-        distance = int(leg[1:])
+        distance = Wire.length(leg)
         if direction == "U":
             return Location(start.x, start.y + distance)
         elif direction == "D":
@@ -169,6 +190,7 @@ day_3_input = util.read_input("day3")
 path1 = day_3_input[0].split(",")
 path2 = day_3_input[1].split(",")
 
+# Part One ####################################################################
 min_distance = 10000000  # Something big
 
 wire1 = Wire(path1)
@@ -220,4 +242,18 @@ print("Part One", min_distance)
 #
 # What is the fewest combined steps the wires must take to reach an intersection?
 
-print("Part Two", None)
+# Part Two ####################################################################
+
+min_distance = 10000000  # Something big
+
+wire1 = Wire(path1)
+wire2 = Wire(path2)
+for s1 in wire1.sections:
+    for s2 in wire2.sections:
+        if s1.step_at_a + s2.step_at_a < min_distance:
+            d = s1.intersection_distance(s2)
+            if d > 0:
+                min_distance = min(min_distance, d)
+
+
+print("Part Two", min_distance)
