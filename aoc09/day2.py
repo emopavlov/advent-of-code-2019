@@ -1,4 +1,5 @@
-import util
+from aoc09 import util
+
 
 # --- Day 2: 1202 Program Alarm ---
 #

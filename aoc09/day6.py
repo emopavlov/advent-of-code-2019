@@ -1,4 +1,4 @@
-import util
+from aoc09 import util
 
 # --- Day 6: Universal Orbit Map ---
 #

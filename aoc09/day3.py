@@ -1,4 +1,4 @@
-import util
+from aoc09 import util
 
 
 # --- Day 3: Crossed Wires ---

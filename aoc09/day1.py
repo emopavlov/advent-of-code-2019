@@ -1,4 +1,5 @@
-import util
+from aoc09 import util
+
 
 # --- Day 1: The Tyranny of the Rocket Equation ---
 #

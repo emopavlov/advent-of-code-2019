@@ -1,4 +1,4 @@
-import util
+from aoc09 import util
 
 # --- Day 8: Space Image Format ---
 #

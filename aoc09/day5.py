@@ -1,5 +1,4 @@
-import util
-import incode_computer
+from aoc09 import incode_computer, util
 
 # --- Day 5: Sunny with a Chance of Asteroids ---
 #
@@ -57,7 +56,7 @@ the_input = list(map(int, util.read_input("day5", ",")))
 the_output = []
 
 # Input should be 1
-incode_computer.IntcodeComputer(the_input).run([1], the_output)
+the_output = incode_computer.IntcodeComputer(the_input).run([1])
 print("Part One Finished")
 
 # --- Part Two ---
@@ -103,6 +102,6 @@ print("Part One Finished")
 
 test_input = list(map(int, util.read_input("day5", ",")))
 # Input should be 5
-incode_computer.IntcodeComputer(test_input).run([5], the_output)
+the_output = incode_computer.IntcodeComputer(test_input).run([5])
 print("Part Two Finished")
 print("All output", the_output)
