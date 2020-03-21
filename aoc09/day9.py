@@ -1,5 +1,5 @@
 from aoc09 import util
-from aoc09 import incode_computer
+from aoc09.tools import incode_computer
 
 # --- Day 9: Sensor Boost ---
 #

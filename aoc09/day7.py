@@ -1,6 +1,7 @@
 import itertools
 
-from aoc09 import incode_computer, util
+from aoc09 import util
+from aoc09.tools import incode_computer
 
 # --- Day 7: Amplification Circuit ---
 #

@@ -1,4 +1,5 @@
-from aoc09 import incode_computer, util
+from aoc09 import util
+from aoc09.tools import incode_computer
 
 # --- Day 5: Sunny with a Chance of Asteroids ---
 #

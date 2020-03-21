@@ -1,5 +1,5 @@
 import unittest
-from aoc09 import incode_computer
+from aoc09.tools import incode_computer
 
 
 class TestIntcodeComputer(unittest.TestCase):
