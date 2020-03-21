@@ -8,7 +8,19 @@ class IntcodeComputer:
         self.input_list = []
         self.output_list = []
 
-    def interpret(self):
+    def run(self, input_list=[]):
+        self.input_list = input_list
+        self.state = _State.running
+
+        while self.state == _State.running:
+            self._interpret()
+
+        return self.memory.get(0)
+
+    def continue_run(self, input_list):
+        return self.run(input_list)
+
+    def _interpret(self):
         if self.state == _State.done:
             return
 
@@ -91,18 +103,6 @@ class IntcodeComputer:
             raise Exception("Unknown instruction code", instruction.code)
 
         self.pointer += instruction.length
-
-    def run(self, input_list=[]):
-        self.input_list = input_list
-        self.state = _State.running
-
-        while self.state == _State.running:
-            self.interpret()
-
-        return self.memory.get(0)
-
-    def continue_run(self, input_list):
-        return self.run(input_list)
 
     @staticmethod
     def _code_with_param_modes(code):
