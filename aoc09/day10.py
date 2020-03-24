@@ -166,15 +166,28 @@ def asteroids(matrix):
     return ((x, y) for (x, y) in matrix.index_range() if matrix.get(x, y) == "#")
 
 
-def asteroid_visibility(a, matrix):
+def _visibility_matrix(a, matrix):
     x, y = a
     a_matrix = matrix.copy()
     a_matrix.set(x, y, "C")  # Don't count current
     for (ox, oy) in asteroids(a_matrix):
         for h in find_hidden((x, y), (ox, oy), a_matrix):
             a_matrix.set(h[0], h[1], "X")
+    return a_matrix
 
+
+def visible_asteroids_count(a, matrix):
+    a_matrix = _visibility_matrix(a, matrix)
     visible = a_matrix.values.count("#")
+    return visible
+
+
+def visible_asteroids(a, matrix):
+    a_matrix = _visibility_matrix(a, matrix)
+    visible = []
+    for (x, y) in a_matrix.index_range():
+        if a_matrix.get(x, y) == "#":
+            visible.append((x, y))
     return visible
 
 
@@ -183,11 +196,54 @@ def asteroid_with_best_visibility(matrix):
     best = None
     for (x, y) in matrix.index_range():
         if matrix.get(x, y) == "#":
-            visible = asteroid_visibility((x, y), matrix)
+            visible = visible_asteroids_count((x, y), matrix)
             if visible > max_visible:
                 max_visible = visible
                 best = (x, y)
     return best, max_visible
+
+
+def rank_point(point):
+    """
+    Gives point a rank of the form (half, rank). Half refers to halves of the unit circle on which the point is projected
+    Points can be compared based on this tuple
+    :param point: the point (tuple (x, y)) to be ranked
+    """
+
+    x, y = point
+    y_normalized = y / (abs(x) + abs(y))
+    if x > 0 or (x == 0 and y < 0):
+        half = 1
+        # invert y, because on the map y grows from top to bottom
+        rank = y_normalized
+    else:
+        half = 2
+        rank = -y_normalized
+
+    return half, rank
+
+
+def sort_points(points):
+    return sorted(points, key=rank_point)
+
+
+def find_n_destroyed_asteroid(matrix, cannon_base, n):
+    destroyed = 0
+    m = matrix.copy()
+    while True:
+        asteroids = visible_asteroids(cannon_base, m)
+        if len(asteroids) == 0:
+            raise Exception("Not found")
+
+        if destroyed + len(asteroids) < n:
+            destroyed += len(asteroids)
+            for (x, y) in asteroids:
+                m.set(x, y, "x")
+        else:
+            # move to coordinate system with center cannon_base
+            sorted_asteroids = sort_points(list(map(lambda a: (a[0] - cannon_base[0], a[1] - cannon_base[1]), asteroids)))
+            x, y = sorted_asteroids[n - 1 - destroyed]
+            return x + cannon_base[0], y + cannon_base[1]
 
 
 m = to_matrix(read_input("day10"))
@@ -260,3 +316,6 @@ print("Part One:", winner)
 #     The 299th and final asteroid to be vaporized is at 11,1.
 #
 # The Elves are placing bets on which will be the 200th asteroid to be vaporized. Win the bet by determining which asteroid that will be; what do you get if you multiply its X coordinate by 100 and then add its Y coordinate? (For example, 8,2 becomes 802.)
+
+n_200 = find_n_destroyed_asteroid(m, (20, 20), 200)
+print("Part One:", n_200[0] * 100 + n_200[1])

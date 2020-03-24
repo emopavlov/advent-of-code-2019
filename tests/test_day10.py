@@ -76,9 +76,9 @@ class TestDay10(unittest.TestCase):
         )
 
         m = to_matrix(asteroid_map)
-        self.assertEqual(8, asteroid_visibility((3, 4), m))
-        self.assertEqual(7, asteroid_visibility((2, 2), m))
-        self.assertEqual(7, asteroid_visibility((4, 3), m))
+        self.assertEqual(8, visible_asteroids_count((3, 4), m))
+        self.assertEqual(7, visible_asteroids_count((2, 2), m))
+        self.assertEqual(7, visible_asteroids_count((4, 3), m))
 
     # best (3,4) with 8
     def test_asteroid_with_best_visibility(self):
@@ -92,3 +92,25 @@ class TestDay10(unittest.TestCase):
 
         m = to_matrix(asteroid_map)
         self.assertEqual(((3, 4), 8), asteroid_with_best_visibility(m))
+
+    def test_sort_points(self):
+        points = [(10, 10), (5, 7), (0, 2), (-1, -4), (2, 0), (-4, 0), (0, -17), (5, 6), (-2, -4), (3, -5)]
+        self.assertEqual(
+            [(0, -17), (3, -5), (2, 0),(10, 10), (5, 6), (5, 7), (0, 2), (-4, 0), (-2, -4), (-1, -4)],
+            sort_points(points)
+        )
+
+    def test_find_n_destroyed_asteroid(self):
+        asteroid_map = (
+            ".#....#####...#..",
+            "##...##.#####..##",
+            "##...#...#.#####.",
+            "..#.....X...###..",
+            "..#.#.....#....##",
+        )
+
+        m = to_matrix(asteroid_map)
+        self.assertEqual((14, 3), find_n_destroyed_asteroid(m, (8, 3), 36))
+        self.assertEqual((2, 4), find_n_destroyed_asteroid(m, (8, 3), 19))
+        self.assertEqual((9, 2), find_n_destroyed_asteroid(m, (8, 3), 5))
+
