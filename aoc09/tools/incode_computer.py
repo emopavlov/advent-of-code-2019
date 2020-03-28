@@ -20,6 +20,9 @@ class IntcodeComputer:
     def continue_run(self, input_list):
         return self.run(input_list)
 
+    def is_running(self):
+        return self.state != _State.done
+
     def _interpret(self):
         if self.state == _State.done:
             return
