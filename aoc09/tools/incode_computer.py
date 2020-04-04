@@ -8,8 +8,9 @@ class IntcodeComputer:
         self.input_list = []
         self.output_list = []
 
-    def run(self, input_list=[]):
-        self.input_list = input_list
+    def run(self, input_list=None):
+        if input_list:
+            self.input_list = input_list
         self.state = _State.running
 
         while self.state == _State.running:
