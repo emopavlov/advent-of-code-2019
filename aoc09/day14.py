@@ -1,4 +1,5 @@
 from aoc09.util import read_input
+from math import floor
 
 # --- Day 14: Space Stoichiometry ---
 #
@@ -98,6 +99,13 @@ class Expression:
         self.definitions = definitions
         self.definition_tiers = definition_tiers
         self.compounds = compounds
+        self.replace_method = self._replace
+
+    @staticmethod
+    def exact_expression(definitions, definition_tiers, compounds):
+        e = Expression(definitions, definition_tiers, compounds)
+        e.replace_method = e._replace_exact
+        return e
 
     def to_ore(self):
         for tier in reversed(self.definition_tiers):
@@ -111,7 +119,7 @@ class Expression:
             if compound.chemical not in tier.keys():
                 compounds.append(compound)
             else:
-                compounds = compounds + self._replace(compound, tier)
+                compounds = compounds + self.replace_method(compound, tier)
 
         grouped = Expression._group_by_chemical(compounds)
         self.compounds = Expression._sum(grouped)
@@ -122,6 +130,15 @@ class Expression:
         q = compound.quantity - compound.quantity % -d.output.quantity
         return list(map(
             lambda x: Compound(x.chemical, x.quantity * q // d.output.quantity),
+            d.inputs
+        ))
+
+    @staticmethod
+    def _replace_exact(compound, definitions):
+        d = definitions[compound.chemical]
+        q = compound.quantity
+        return list(map(
+            lambda x: Compound(x.chemical, x.quantity * q / d.output.quantity),
             d.inputs
         ))
 
@@ -225,6 +242,7 @@ print("Part One:", e.compounds[0].quantity)
 the_input = read_input("day14")
 definitions = read_definitions(the_input)
 tiers = definition_tiers(definitions)
-e = Expression(definitions, tiers, [Compound("ORE", 1000000000000)])
-e.to_ore()
-print("Part One:", e.compounds[0].quantity)
+e2 = Expression.exact_expression(definitions, tiers, [Compound("FUEL", 1)])
+e2.to_ore()
+max_fuel = floor(1000000000000 / e2.compounds[0].quantity)
+print("Part Two:", max_fuel)
