@@ -8,6 +8,15 @@ class IntcodeComputer:
         self.input_list = []
         self.output_list = []
 
+    def copy(self):
+        other = IntcodeComputer(self.memory.mem.copy())
+        other.pointer = self.pointer
+        other.relative_base = self.relative_base
+        other.state = self.state
+        other.input_list = self.input_list.copy()
+        other.output_list = self.output_list.copy()
+        return other
+
     def run(self, input_list=None):
         if input_list:
             self.input_list = input_list
