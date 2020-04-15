@@ -126,3 +126,25 @@ print("Part One:", phase_n(the_input, 100))
 #     03081770884921959731165446850517 becomes 53553731.
 #
 # After repeating your input signal 10000 times and running 100 phases of FFT, what is the eight-digit message embedded in the final output list?
+
+
+the_input = read_input("day16")[0]
+input_len = len(the_input)
+offset = int(the_input[0:7])
+multiplier = 10000
+string_len = input_len * multiplier - offset  # must be less than input_len/2 for this to work
+
+full_repetitions_count = string_len // input_len
+header_len = string_len % input_len
+
+task_input = the_input[-header_len:] + the_input * full_repetitions_count
+task_input = list(map(int, task_input))
+task_input.reverse()
+
+for repetitions in range(0, 100):
+    for i in range(0, len(task_input) - 1):
+        task_input[i + 1] = (task_input[i + 1] + task_input[i]) % 10
+
+result = task_input[-8:]
+result.reverse()
+print("Part Two:", ''.join(str(e) for e in result))
