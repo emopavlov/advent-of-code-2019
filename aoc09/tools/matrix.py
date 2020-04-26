@@ -50,8 +50,16 @@ class Matrix:
             for y in range(0, self.height):
                 yield x, y
 
-    def print_top_left(self):
+    def print_top_left(self, print_headers=False):
+        if print_headers:
+            top = "  "
+            for i in range(0, self.width):
+                top += str(i % 10) + " "
+            print(top)
+
         for i in range(0, len(self.values), self.width):
+            if print_headers:
+                print(str(i // self.width % 10), end=" ")
             print(*self.values[i:i + self.width])
 
     def print_bottom_left(self):
