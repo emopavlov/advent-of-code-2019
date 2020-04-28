@@ -43,7 +43,10 @@ class Matrix:
         self.values[x + y * self.width] = value
 
     def get(self, x, y):
-        return self.values[x + y * self.width]
+        if 0 <= x < self.width and 0 <= y < self.height:
+            return self.values[x + y * self.width]
+        else:
+            return None
 
     def index_range(self):
         for x in range(0, self.width):

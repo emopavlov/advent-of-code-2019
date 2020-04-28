@@ -62,8 +62,8 @@ def compress(sequences, dict_size, word_size, dict):
         result = replace(sequences, ss, ':' + str(dict_size))
         if len(result) <= word_size:
             if all(x[0][0] == ':' for x in result):
-                print("JACKPOT!")
-                print(dict + [ss])
-                print(result)
+                return dict + [ss], result
             elif dict_size > 1:
-                compress(result, dict_size - 1, word_size, dict + [ss])
+                success = compress(result, dict_size - 1, word_size, dict + [ss])
+                if success:
+                    return success

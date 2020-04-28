@@ -48,7 +48,7 @@ from aoc09.tools.matrix import Matrix
 # Run your ASCII program. What is the sum of the alignment parameters for the scaffold intersections?
 
 
-scaffolding = "#"
+SCAFFOLDING = "#"
 
 program = list(map(int, read_input("day17", ",")))
 computer = IntcodeComputer(program)
@@ -57,14 +57,14 @@ output = ''.join(list(map(chr, computer.output_list)))
 elements = list(map(list, output.split("\n")))
 matrix = Matrix()
 matrix.init_from_values(elements)
-matrix.print_top_left(print_headers=True)
+# matrix.print_top_left(print_headers=True)
 x_points = 0
 for x, y in matrix.index_range():
-    if 0 < x < matrix.width and 0 < y < matrix.height and matrix.get(x, y) == scaffolding:
-        if matrix.get(x - 1, y) == scaffolding and \
-            matrix.get(x + 1, y) == scaffolding and \
-            matrix.get(x, y - 1) == scaffolding and \
-            matrix.get(x, y + 1) == scaffolding:
+    if 0 < x < matrix.width and 0 < y < matrix.height and matrix.get(x, y) == SCAFFOLDING:
+        if matrix.get(x - 1, y) == SCAFFOLDING and \
+            matrix.get(x + 1, y) == SCAFFOLDING and \
+            matrix.get(x, y - 1) == SCAFFOLDING and \
+            matrix.get(x, y + 1) == SCAFFOLDING:
             x_points += x * y
 
 print("Part One:", x_points)
@@ -150,14 +150,83 @@ print("Part One:", x_points)
 
 from aoc09.tools.compression import *
 
+
+class Robot:
+    def __init__(self, m):
+        self.map = m
+        self.robot_location = None
+        self.robot_direction = (0, -1)
+
+        for x, y in matrix.index_range():
+            if matrix.get(x, y) == "^":
+                self.robot_location = (x, y)
+
+    def can_go(self):
+        x, y = self.robot_location
+        dx, dy = self.robot_direction
+        return self.map.get(x + dx, y + dy) == SCAFFOLDING
+
+    def go(self):
+        x, y = self.robot_location
+        dx, dy = self.robot_direction
+        self.robot_location = (x + dx, y + dy)
+        return 1
+
+    @staticmethod
+    def turn_left(x, y):
+        return y, -x
+
+    @staticmethod
+    def turn_right(x, y):
+        return -y, x
+
+    def turn(self):
+        x, y = self.robot_location
+        dx, dy = self.robot_direction
+        lx, ly = Robot.turn_left(dx, dy)
+        rx, ry = Robot.turn_right(dx, dy)
+        if self.map.get(x + lx, y + ly) == SCAFFOLDING:
+            self.robot_direction = (lx, ly)
+            return "L"
+        elif self.map.get(x + rx, y + ry) == SCAFFOLDING:
+            self.robot_direction = (rx, ry)
+            return "R"
+        else:
+            return None
+
+
+robby = Robot(matrix)
+route = []
+line_len = 0
+while True:
+    if robby.can_go():
+        line_len += robby.go()
+    else:
+        if line_len != 0:
+            route.append(str(line_len))
+            line_len = 0
+        turn = robby.turn()
+        if turn:
+            route += turn
+        else:
+            break
+
+
 DICT_SIZE = 3
-WORD_SIZE = 20
+WORD_SIZE = 10
 
-# program = list(map(int, read_input("day17", ",")))
-# program[0] = 2
-# computer = IntcodeComputer(program)
-# computer.run()
+dictionary, command = compress([route], DICT_SIZE, WORD_SIZE, [])
 
-test_route = "L,12,L,8,R,12,L,10,L,8,L,12,R,12,L,12,L,8,R,12,R,12,L,8,L,10,L,12,L,8,R,12,L,12,L,8,R,12,R,12,L,8,L,10,L,10,L,8,L,12,R,12,R,12,L,8,L,8,L,10,L,8,L,12,R,12".split(",")
+main_routine = ','.join(str(e[0]).replace(':3', 'A').replace(':2', 'B').replace(':1', 'C') for e in command) + '\n'
+routine_a = ','.join(dictionary[0]) + '\n'
+routine_b = ','.join(dictionary[1]) + '\n'
+routine_c = ','.join(dictionary[2]) + '\n'
 
-compress([test_route], DICT_SIZE, WORD_SIZE, [])
+routines_input = list(map(ord, main_routine + routine_a + routine_b + routine_c + 'n' + '\n'))
+
+program = list(map(int, read_input("day17", ",")))
+program[0] = 2
+computer = IntcodeComputer(program)
+result = computer.run(routines_input)
+print("Part Two:", computer.output_list[-1])
+
