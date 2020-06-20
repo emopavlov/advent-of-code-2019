@@ -21,6 +21,15 @@ class Matrix:
 
         return self
 
+    def init_from_string(self, string):
+        """
+        Create a matrix from the given string
+
+        :param string: a string in which each line is a row in the matrix. Each line must have the same length
+        """
+        values = list(map(list, string.split("\n")))
+        self.init_from_values(values)
+
     def init_from_values(self, values):
         """
         Create a matrix from the given values
@@ -47,6 +56,13 @@ class Matrix:
             return self.values[x + y * self.width]
         else:
             return None
+
+    def index_of(self, value):
+        for x in range(0, self.width):
+            for y in range(0, self.height):
+                if self.get(x, y) == value:
+                    return x, y
+        return None
 
     def index_range(self):
         for x in range(0, self.width):

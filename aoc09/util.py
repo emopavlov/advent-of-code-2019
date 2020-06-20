@@ -1,7 +1,7 @@
-# Utility functions
+from typing import List
 
 
-def read_input(file, separator="\n"):
+def read_input(file: str, separator="\n") -> List[str]:
     with open("../input/" + file, "r") as rd:
         out = []
         for line in rd:
