@@ -48,6 +48,7 @@ class TestDay18(unittest.TestCase):
             "########################"
         ])
         g = map_to_graph(m)
+        print(g.the_graph)
         # some checks, the graph covers only "shortest" distances but not all paths
 
     def test_priority_queue(self):
@@ -101,3 +102,76 @@ class TestDay18(unittest.TestCase):
         g = map_to_graph(m)
         n = walk_graph(g, "@")
         self.assertEqual(n, 136)
+
+##############################################################
+# Part Two
+
+    def test_build_graphs(self):
+        m = map_to_matrix([
+            "#######",
+            "#a.#Cd#",
+            "##@#@##",
+            "#######",
+            "##@#@##",
+            "#cB#.b#",
+            "#######"
+        ])
+        print("\n".join(list(map(lambda g: str(g.the_graph), map_to_graphs(m)))))
+
+    def test_walk_graphs(self):
+        m = map_to_matrix([
+            "#######",
+            "#a.#Cd#",
+            "##@#@##",
+            "#######",
+            "##@#@##",
+            "#cB#.b#",
+            "#######"
+        ])
+        gs = map_to_graphs(m)
+        n = walk_graphs(gs, "@")
+        self.assertEqual(8, n)
+
+    def test_walk_graphs_2(self):
+        m = map_to_matrix([
+            "###############",
+            "#d.ABC.#.....a#",
+            "######@#@######",
+            "###############",
+            "######@#@######",
+            "#b.....#.....c#",
+            "###############",
+        ])
+        gs = map_to_graphs(m)
+        n = walk_graphs(gs, "@")
+        self.assertEqual(24, n)
+
+    def test_walk_graphs_3(self):
+        m = map_to_matrix([
+            "#############",
+            "#DcBa.#.GhKl#",
+            "#.###@#@#I###",
+            "#e#d#####j#k#",
+            "###C#@#@###J#",
+            "#fEbA.#.FgHi#",
+            "#############",
+        ])
+        gs = map_to_graphs(m)
+        n = walk_graphs(gs, "@")
+        self.assertEqual(32, n)
+
+    def test_walk_graphs_4(self):
+        m = map_to_matrix([
+            "#############",
+            "#g#f.D#..h#l#",
+            "#F###e#E###.#",
+            "#dCba@#@BcIJ#",
+            "#############",
+            "#nK.L@#@G...#",
+            "#M###N#H###.#",
+            "#o#m..#i#jk.#",
+            "#############"
+        ])
+        gs = map_to_graphs(m)
+        n = walk_graphs(gs, "@")
+        self.assertEqual(72, n)

@@ -147,6 +147,10 @@ def map_to_matrix(the_map: List[str]) -> Matrix:
 
 
 def find_edges(the_map: Matrix, start: str, targets: Set[str]) -> Dict[str, Tuple[int, str]]:
+    return find_edges_at(the_map, the_map.index_of(start), targets)
+
+
+def find_edges_at(the_map: Matrix, start: Tuple[int, int], targets: Set[str]) -> Dict[str, Tuple[int, str]]:
 
     def legal_moves(pos: Position) -> Set[Position]:
         x, y, passed_doors = pos
@@ -176,7 +180,7 @@ def find_edges(the_map: Matrix, start: str, targets: Set[str]) -> Dict[str, Tupl
             return x, y, passed_doors
 
     # BFS
-    starting_position = the_map.index_of(start) + ("",)
+    starting_position = start + ("",)
     search_front = {starting_position}
     visited = {starting_position}
     steps = 0
@@ -205,7 +209,7 @@ class Graph:
     def __init__(self):
         self.the_graph = {}
 
-    def add(self, source, destination, distance, doors_passed):
+    def put(self, source, destination, distance, doors_passed):
         val = (distance, doors_passed)
         if source in self.the_graph and destination in self.the_graph[source]:
             if self.the_graph[source][destination] != val:
@@ -230,13 +234,13 @@ def map_to_graph(the_map: Matrix):
     keys_to_collect = all_keys(the_map.values)
     paths_from_start = find_edges(the_map, "@", keys_to_collect)
     for k, v in paths_from_start.items():
-        graph.add("@", k, *v)
+        graph.put("@", k, *v)
 
     while len(keys_to_collect) > 0:
         key = keys_to_collect.pop()
         paths = find_edges(the_map, key, keys_to_collect)
         for k, v in paths.items():
-            graph.add(key, k, *v)
+            graph.put(key, k, *v)
 
     return graph
 
@@ -447,3 +451,77 @@ if __name__ == "__main__":
 # This example requires at least 72 steps to collect all keys.
 #
 # After updating your map and using the remote-controlled robots, what is the fewest steps necessary to collect all of the keys?
+
+
+def map_to_graphs(the_map: Matrix):
+    graphs = []
+    keys_to_collect = all_keys(the_map.values)
+
+    for x, y in [x for x in the_map.index_range() if the_map.get(*x) == "@"]:
+        graph = Graph()
+        paths_from_start = find_edges_at(the_map, (x, y), keys_to_collect)
+        for k, v in paths_from_start.items():
+            graph.put("@", k, *v)
+
+        keys_in_graph = set(paths_from_start.keys())
+        while len(keys_in_graph) > 0:
+            key = keys_in_graph.pop()
+            paths = find_edges(the_map, key, keys_in_graph)
+            for k, v in paths.items():
+                graph.put(key, k, *v)
+
+        graphs.append(graph)
+
+    return graphs
+
+
+def walk_graphs(graphs: List[Graph], start_at: str) -> int:
+
+    # BFS
+    # first position of the Walker now contains all current nodes
+    w0 = (start_at * len(graphs), start_at)
+    initial_walker = (w0, set())
+    search_front = PriorityQueue()
+    search_front.put((0, initial_walker))
+    visited = set()
+    target = "".join(sorted(set("".join(list(map(lambda x: x.all_nodes(), graphs))))))
+
+    while not search_front.empty():
+        # get top of queue
+        (distance, walker_with_doors) = search_front.get()
+
+        # check for target
+        (walker, open_doors) = walker_with_doors
+        (_, collected_keys) = walker
+        if collected_keys == target:
+            return distance
+
+        # skip if visited
+        if walker in visited:
+            continue
+        else:
+            visited.add(walker)
+
+        # expand and push in queue
+        (multi_walker, doors) = walker_with_doors
+        for i, g in enumerate(graphs):
+            single_walker = multi_walker[0][i], multi_walker[1]
+            for dw, expanded_walker in expand_walker((single_walker, doors), g):
+                # shit code to expand each walker separately while keeping a single multiwalker state
+                w = expanded_walker[0]
+                new_walker = multi_walker[0][:i] + w[0] + multi_walker[0][i + 1:], w[1]
+                search_front.put((distance + dw, (new_walker, expanded_walker[1])))
+
+    return -1
+
+
+if __name__ == "__main__":
+    import time
+    s_time = time.time()
+
+    m = map_to_matrix(read_input("day18_part2"))
+    gs = map_to_graphs(m)
+    n = walk_graphs(gs, "@")
+    print("Part Two: ", n)
+
+    print("time: ", time.time() - s_time)
