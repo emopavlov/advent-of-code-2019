@@ -1,6 +1,7 @@
 from aoc09.util import read_input
 from aoc09.tools.matrix import Matrix
-from typing import Tuple, List, Set
+from typing import Tuple, List, Set, Dict
+from queue import PriorityQueue
 
 # --- Day 18: Many-Worlds Interpretation ---
 #
@@ -116,12 +117,15 @@ OPEN = "."
 START = "@"
 
 Tile = Tuple[int, int]
+Position = Tuple[int, int, str]  # x, y, passed doors
 
-Position = Tuple[int, int, str]  # x, y, keys collected
 
-
-def keys(pos: Position) -> str:
+def doors(pos: Position) -> str:
     return pos[2]
+
+
+def coordinates(pos: Position) -> Tuple[int, int]:
+    return pos[0], pos[1]
 
 
 def is_door(tile: chr) -> bool:
@@ -132,8 +136,8 @@ def is_key(tile: chr) -> bool:
     return "a" <= tile <= "z"
 
 
-def all_keys(the_map: List[str]) -> str:
-    return "".join(sorted(filter(is_key, '\n'.join(the_map))))
+def all_keys(the_map: List[str]) -> Set[str]:
+    return set(filter(is_key, '\n'.join(the_map)))
 
 
 def map_to_matrix(the_map: List[str]) -> Matrix:
@@ -142,22 +146,16 @@ def map_to_matrix(the_map: List[str]) -> Matrix:
     return m
 
 
-def number_of_moves_to_collect_all_keys(the_map: Matrix) -> int:
-    start_tile = the_map.index_of(START)
-    target_keys = all_keys(the_map.values)
+def find_edges(the_map: Matrix, start: str, targets: Set[str]) -> Dict[str, Tuple[int, str]]:
 
     def legal_moves(pos: Position) -> Set[Position]:
-        x, y, ks = pos  # todo ks is searched, should be set instead
+        x, y, passed_doors = pos
 
         def accessible(tile):
             x, y = tile
             if 0 <= x < the_map.width and 0 <= y < the_map.height:
                 tile_value = the_map.get(x, y)
-                return (tile_value == OPEN or
-                        tile_value == START or
-                        is_key(tile_value) or
-                        is_door(tile_value) and tile_value.lower() in ks
-                        )
+                return tile_value != WALL
             else:
                 return False
 
@@ -167,41 +165,145 @@ def number_of_moves_to_collect_all_keys(the_map: Matrix) -> int:
             (x + 1, y),
             (x - 1, y)
         ]
-        positions = set(map(lambda x: move_to_position(x[0], x[1], ks), filter(accessible, moves)))
+        positions = set(map(lambda x: move_to_position(x[0], x[1], passed_doors), filter(accessible, moves)))
         return positions
 
-    def move_to_position(x, y, collected_keys):
-        key = the_map.get(x, y)
-        if is_key(key) and key not in collected_keys:
-            return x, y, ''.join(sorted(collected_keys + key))
+    def move_to_position(x, y, passed_doors):
+        tile = the_map.get(x, y)
+        if is_door(tile) and tile not in passed_doors:
+            return x, y, ''.join(sorted(passed_doors + tile))
         else:
-            return x, y, collected_keys
+            return x, y, passed_doors
 
-        start = start_tile + ("",)
-        search_front = {start}
-        visited = {start}
-        steps = 0
-        while len(search_front) > 0:
-            for p in search_front:
-                if keys(p) == target_keys:
-                    # Found it!
-                    return steps
+    # BFS
+    starting_position = the_map.index_of(start) + ("",)
+    search_front = {starting_position}
+    visited = {starting_position}
+    steps = 0
+    paths = {}
+    found = set()
 
-            expanded_front = {m for pos in search_front for m in legal_moves(pos) if m not in visited}
-            # increment and repeat
-            search_front = expanded_front
-            visited = visited.union(search_front)
-            steps += 1
+    while len(search_front) > 0 and found != targets:
+        for p in search_front:
+            xy = coordinates(p)
+            tile = the_map.get(*xy)
+            if tile in targets:
+                if tile not in paths:
+                    paths[tile] = (steps, doors(p))
+                found.add(tile)
 
-        return -1  # not found
+        expanded_front = {m for pos in search_front for m in legal_moves(pos) if m not in visited}
+        # increment and repeat
+        search_front = expanded_front
+        visited = visited.union(search_front)
+        steps += 1
+
+    return paths
 
 
-## Second solution: Build graph instead
+class Graph:
+    def __init__(self):
+        self.the_graph = {}
+
+    def add(self, source, destination, distance, doors_passed):
+        val = (distance, doors_passed)
+        if source in self.the_graph and destination in self.the_graph[source]:
+            if self.the_graph[source][destination] != val:
+                print(f"Found alternative route for {(source, destination)}, was {self.the_graph[source][destination]}, new one is {val}")
+        if source not in self.the_graph:
+            self.the_graph[source] = {}  # initiate source dict
+        self.the_graph[source][destination] = val
+
+        if destination not in self.the_graph:
+            self.the_graph[destination] = {}  # initiate destination dict
+        self.the_graph[destination][source] = val
+
+    def get(self, source: str) -> Dict[str, Tuple[int, str]]:
+        return self.the_graph[source]
+
+    def all_nodes(self) -> str:
+        return ''.join(sorted(self.the_graph.keys()))
+
+
+def map_to_graph(the_map: Matrix):
+    graph = Graph()
+    keys_to_collect = all_keys(the_map.values)
+    paths_from_start = find_edges(the_map, "@", keys_to_collect)
+    for k, v in paths_from_start.items():
+        graph.add("@", k, *v)
+
+    while len(keys_to_collect) > 0:
+        key = keys_to_collect.pop()
+        paths = find_edges(the_map, key, keys_to_collect)
+        for k, v in paths.items():
+            graph.add(key, k, *v)
+
+    return graph
+
+
+Node = str
+Walker = Tuple[str, str]  # node, collected keys (ordered)
+WalkerWithDoors = Tuple[Walker, Set[str]]  # walker, unlocked doors set
+
+
+def expand_walker(w: WalkerWithDoors, graph: Graph) -> List[Tuple[int, WalkerWithDoors]]:  # List[(step length, new walker)]
+    def new_walker(w: WalkerWithDoors, dest: Node, gates: str) -> WalkerWithDoors:
+        (walker, open_doors) = w
+        for g in gates:
+            if g not in open_doors:
+                return None
+        keys = "".join(sorted(set(list(walker[1]) + [dest])))
+        return (dest, keys), open_doors.union({dest.upper()})
+
+    (walker, _) = w
+    all_walkers = [(d, new_walker(w, dest, g)) for dest, (d, g) in graph.get(walker[0]).items()]
+    return [r for r in all_walkers if not None == r[1]]
+
+
+def walk_graph(graph: Graph, start_at: str) -> int:
+
+    # BFS
+    w0 = (start_at, start_at)
+    initial_walker = (w0, set())
+    search_front = PriorityQueue()
+    search_front.put((0, initial_walker))
+    visited = set()
+    target = graph.all_nodes()
+
+    while not search_front.empty():
+        # get top of queue
+        (distance, walker_with_doors) = search_front.get()
+
+        # check for target
+        (walker, open_doors) = walker_with_doors
+        (_, collected_keys) = walker
+        if collected_keys == target:
+            return distance
+
+        # skip if visited
+        if walker in visited:
+            continue
+        else:
+            visited.add(walker)
+
+        # expand and push in queue
+        for d, w in expand_walker(walker_with_doors, graph):
+            search_front.put((distance + d, w))
+
+    return -1
+
 
 if __name__ == "__main__":
+    import time
+    s_time = time.time()
+
     m = map_to_matrix(read_input("day18"))
-    n = number_of_moves_to_collect_all_keys(m)
-    print("Day 18:", n)
+    g = map_to_graph(m)
+    n = walk_graph(g, "@")
+    print("Part One: ", n)
+
+    print("time: ", time.time() - s_time)
+
 
 # --- Part Two ---
 #
