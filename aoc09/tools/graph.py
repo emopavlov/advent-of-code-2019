@@ -13,6 +13,9 @@ class Graph:
     def distance(self, source, destination):
         return self.neighbours[source][destination] if destination in self.neighbours[source] else -1
 
+    def __repr__(self):
+        return "Graph: " + self.neighbours.__repr__()
+
 
 class Edge:
     def __init__(self, source, destination, distance):
