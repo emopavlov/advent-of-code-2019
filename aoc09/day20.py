@@ -2,7 +2,7 @@ from aoc09.tools.search import *
 from aoc09.tools.matrix import Matrix
 from aoc09 import util
 import string
-from typing import Set
+from typing import Set, Dict
 
 # --- Day 20: Donut Maze ---
 #
@@ -88,48 +88,46 @@ ACCESSIBLE = PORTALS + OPEN
 
 
 def portals(m: Matrix) -> Set[Target]:
-    def horizontal_target(x1, x2, y):
-        left = m.get(x1 - 1, y)
-        if left and left == OPEN:
-            return Target(x1 - 1, y, m.get(x1, y) + m.get(x2, y))
+    def portal_position(p1, p2):
+        if p1[0] == p2[0]:  # x
+            x = p1[0]
+            y1, y2 = p1[1], p2[1]
+            if 0 <= y1 - 1 and m.get(x, y1 - 1) == OPEN:
+                return x, y1 - 1
+            else:
+                return x, y2 + 1
+        else:  # y
+            y = p1[1]
+            x1, x2 = p1[0], p2[0]
+            if 0 <= x1 - 1 and m.get(x1 - 1, y) == OPEN:
+                return x1 - 1, y
+            else:
+                return x2 + 1, y
 
-        right = m.get(x2 + 1, y)
-        if right and right == OPEN:
-            return Target(x2 + 1, y, m.get(x1, y) + m.get(x2, y))
+    def horizontal_portals_at(y: int):
+        xs = [x for x in range(m.width) if m.get(x, y) in PORTALS and m.get(x, y + 1) in PORTALS]
+        return [Target(*portal_position((x, y), (x, y + 1)), m.get(x, y) + m.get(x, y + 1)) for x in xs]
 
-        raise Exception(f"Invalid portal name @ {x1},{y} {x2},{y}")
+    def vertical_portals_at(x: int):
+        ys = [y for y in range(m.height) if m.get(x, y) in PORTALS and m.get(x + 1, y) in PORTALS]
+        return [Target(*portal_position((x, y), (x + 1, y)), m.get(x, y) + m.get(x + 1, y)) for y in ys]
 
-    def vertical_target(x, y1, y2):
-        top = m.get(x, y1 - 1)
-        if top and top == OPEN:
-            return Target(x, y1 - 1, m.get(x, y1) + m.get(x, y2))
+    donut_width = 0
+    mid_y = m.height // 2
+    for x in range(2, m.width):
+        if m.get(x, mid_y) == " ":
+            if m.get(x, mid_y) in PORTALS:
+                donut_width = x - 4  # 2 for the outer edge and 2 for the portal we just skipped
+            else:
+                donut_width = x - 2
+            break
 
-        bottom = m.get(x, y2 + 1)
-        if bottom and bottom == OPEN:
-            return Target(x, y2 + 1, m.get(x, y1) + m.get(x, y2))
+    outer_portals = horizontal_portals_at(0) + horizontal_portals_at(m.height - 2) + \
+                    vertical_portals_at(0) + vertical_portals_at(m.width - 2)
+    inner_portals = horizontal_portals_at(2 + donut_width) + horizontal_portals_at(m.height - 4 - donut_width) + \
+                    vertical_portals_at(2 + donut_width) + vertical_portals_at(m.width - 4 - donut_width)
 
-        raise Exception(f"Invalid portal name @ {x},{y1} {x},{y2}")
-
-    def portal_as_target(x: int, y: int) -> Target:
-        right = m.get(x + 1, y)
-        if right and right in PORTALS:
-            return horizontal_target(x, x + 1, y)
-
-        left = m.get(x - 1, y)
-        if left and left in PORTALS:
-            return horizontal_target(x - 1, x, y)
-
-        top = m.get(x, y - 1)
-        if top and top in PORTALS:
-            return vertical_target(x, y-1, y)
-
-        bottom = m.get(x, y + 1)
-        if bottom and bottom in PORTALS:
-            return vertical_target(x, y, y + 1)
-
-        raise Exception(f"Invalid portal name @ {x}{y}")
-
-    return {portal_as_target(x, y) for x, y, name in [(x, y, m.get(x, y)) for x, y in m.index_range()] if name != '' and name in PORTALS}
+    return set(outer_portals).union(set(map(lambda t: Target(t.x, t.y, t.name + "X"), inner_portals)))
 
 
 def expand(m: Matrix, target_positions: Set[Tuple[int, int]], x: int, y: int):
@@ -139,23 +137,15 @@ def expand(m: Matrix, target_positions: Set[Tuple[int, int]], x: int, y: int):
 
 
 def construct_graph(ps: Set[Target], m: Matrix):
-    # rename targets with same name
-    portals_renamed = ps.copy()
-    used_names = set()
-    for portal in portals_renamed:
-        if portal.name in used_names:
-            portal.name += "X"
-        used_names.add(portal.name)
-
     def maze_expand(x, y):
-        return expand(m, set(map(lambda t: t.position(), portals_renamed)), x, y)
+        return expand(m, set(map(lambda t: t.position(), ps)), x, y)
 
-    graph = bfs_to_graph(portals_renamed, maze_expand)
+    graph = bfs_to_graph(ps, maze_expand)
 
     # add teleportation
-    for name in used_names:
+    for name in list(map(lambda n: n.name, ps)):
         alt_name = name + "X"
-        if alt_name in graph.neighbours:
+        if graph.has_node(alt_name):
             graph.add_node(name, alt_name, 1)
             graph.add_node(alt_name, name, 1)
 
@@ -172,7 +162,6 @@ if __name__ == "__main__":
     min_distance = dijkstra(g, "AA", "ZZ")
 
     print("Part Onw: ", min_distance)
-
 
 # --- Part Two ---
 #
@@ -300,3 +289,74 @@ if __name__ == "__main__":
 #
 # In your maze, when accounting for recursion, how many steps does it take to get from the open tile marked AA to the open tile marked ZZ, both at the outermost layer?
 
+
+Node2 = Tuple[str, int]  # name, level
+
+
+class RecursiveGraph(Graph):
+    """
+    A special implementation of Graph which supports multiple graph levels as defined in the task
+    """
+
+    def __init__(self, graph: Graph):
+        self.inner = graph
+
+    def add_node(self, source, destination, distance):
+        raise NotImplementedError
+
+    def has_node(self, node):
+        raise NotImplementedError
+
+    def distance(self, source: Node2, destination: Node2) -> int:
+        s_name, s_level = source
+        d_name, d_level = destination
+
+        if s_level == d_level:
+            return self.inner.distance(s_name, d_name)
+
+        # add teleportation
+        elif s_name[-1] == "X" and s_name[0:2] == d_name and s_level == d_level - 1:
+            return 1
+
+        elif d_name[-1] == "X" and d_name[0:2] == s_name and s_level == d_level + 1:
+            return 1
+
+        raise Exception(f"No edge from {source} to {destination}")
+
+    def neighbours(self, node: Node2) -> Dict[Node2, int]:
+        name, level = node
+        ns = self.inner.neighbours(name)
+
+        neighbours = dict(map(lambda k: ((k, level), ns[k]), ns))
+        if self.__is_inner(name):
+            neighbours[(name[0:2], level + 1)] = 1
+        elif level > 1 and name != "AA" and name != "ZZ":  # is outer
+            neighbours[(name + "X", level - 1)] = 1
+
+        return neighbours
+
+    def __repr__(self):
+        return self.inner.__repr__()
+
+    def __is_inner(self, name):
+        return name[-1] == "X"
+
+
+def construct_recursive_graph(ps: Set[Target], m: Matrix):
+    def maze_expand(x, y):
+        return expand(m, set(map(lambda t: t.position(), ps)), x, y)
+
+    graph = bfs_to_graph(ps, maze_expand)
+    rgraph = RecursiveGraph(graph)
+    return rgraph
+
+
+if __name__ == "__main__":
+    maze = util.read_input("day20", should_strip=False)
+    m = Matrix()
+    m.init_from_string('\n'.join(maze))
+    ps = portals(m)
+    g = construct_recursive_graph(ps, m)
+    min_distance = dijkstra(g, ("AA", 1), ("ZZ", 1))
+
+    print("Part Two: ", min_distance)

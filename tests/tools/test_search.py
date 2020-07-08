@@ -31,4 +31,4 @@ class TestSearch(unittest.TestCase):
 
         self.assertEqual(10, g.distance('b', 'c'))
         self.assertEqual(44, g.distance('d', 'f'))
-        self.assertEqual(len(targets), len(g.neighbours))
+        self.assertEqual(len(targets), len(g.__neighbours))

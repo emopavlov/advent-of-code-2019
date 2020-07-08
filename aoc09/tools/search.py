@@ -1,6 +1,6 @@
 from queue import PriorityQueue
 
-from aoc09.tools.graph import Graph
+from aoc09.tools.graph import Graph, DictionaryGraph
 from typing import List, Tuple, Callable, Set, Any
 
 
@@ -32,7 +32,7 @@ def bfs_to_graph(
     target_positions = {t.position(): t for t in targets}
     target_names = {t.name for t in targets}
 
-    graph = Graph(target_names, [])
+    graph = DictionaryGraph(target_names, [])
     for target in targets:
         starting_position = target.position()
         search_front = {starting_position}
@@ -88,6 +88,6 @@ def dijkstra(
             visited.add(node)
 
         # expand and push in queue
-        for n, d in graph.neighbours[node].items():
+        for n, d in graph.neighbours(node).items():
             search_front.put((distance + d, n))
     return -1
