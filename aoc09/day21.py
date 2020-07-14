@@ -127,8 +127,15 @@ if __name__ == '__main__':
     comp = IntcodeComputer(mem)
 
     program = """NOT A J
+                 NOT B T
+                 OR T J
                  NOT C T
-                 AND D T
+                 OR T J
+                 NOT D T
+                 NOT T T
+                 AND T J
+                 AND H J
+                 AND E T
                  OR T J
                  RUN
               """
